@@ -1,0 +1,21 @@
+[submodule "Deployment-Pipelines"]
+	path = Deployment-Pipelines
+	url = git@github.com:Malisha4065/StreamHive-Pipelines.git
+[submodule "Frontend"]
+	path = Frontend
+	url = git@github.com:Malisha4065/StreamHive-Frontend.git
+[submodule "PlaybackService"]
+	path = PlaybackService
+	url = git@github.com:Malisha4065/StreamHive-PlaybackService.git
+[submodule "SecurityService"]
+	path = SecurityService
+	url = git@github.com:Malisha4065/StreamHive-SecurityService.git
+[submodule "TranscoderService"]
+	path = TranscoderService
+	url = git@github.com:Malisha4065/StreamHive-TranscoderService.git
+[submodule "UploadService"]
+	path = UploadService
+	url = git@github.com:Malisha4065/StreamHive-UploadService.git
+[submodule "VideoCatalogService"]
+	path = VideoCatalogService
+	url = git@github.com:Malisha4065/StreamHive-VideoCatalogService.git

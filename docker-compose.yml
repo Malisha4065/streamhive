@@ -1,0 +1,176 @@
+version: "3.9"
+
+# Unified compose (real Azure Blob Storage)
+services:
+  rabbitmq:
+    image: rabbitmq:4.0-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=video_catalog
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  upload-service:
+    build: ./UploadService
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+      - JWT_SECRET=devsecret
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - AMQP_EXCHANGE=streamhive
+      - AMQP_UPLOAD_ROUTING_KEY=video.uploaded
+      # Real Azure Blob Storage credentials (choose ONE method)
+      # Connection string method:
+      - AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
+      # OR Shared key method:
+      - AZURE_STORAGE_ACCOUNT_NAME=${AZURE_STORAGE_ACCOUNT}
+      - AZURE_STORAGE_ACCOUNT_KEY=${AZURE_STORAGE_KEY}
+      # Containers (ensure they exist or service will create)
+      - AZURE_STORAGE_RAW_CONTAINER=${AZURE_STORAGE_RAW_CONTAINER}
+      - AZURE_STORAGE_PROCESSED_CONTAINER=${AZURE_STORAGE_RAW_CONTAINER}
+      - MAX_FILE_SIZE=1073741824
+      - ALLOWED_FORMATS=mp4,mov,avi,webm
+    ports:
+      - "3001:3001"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    # Use production start (nodemon not installed in image)
+    command: ["npm", "start"]
+
+  transcoder-service:
+    build: ./TranscoderService
+    environment:
+      - AMQP_URL=amqp://guest:guest@rabbitmq:5672/
+      - AMQP_EXCHANGE=streamhive
+      - AMQP_UPLOAD_ROUTING_KEY=video.uploaded
+      - AMQP_TRANSCODED_ROUTING_KEY=video.transcoded
+      - AMQP_QUEUE=transcoder.video.uploaded
+      - CONCURRENCY=1
+      # Real Azure (shared key or SAS URL). Provide either ACCOUNT + KEY or AZURE_STORAGE_SAS_URL
+      - AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT}
+      - AZURE_STORAGE_KEY=${AZURE_STORAGE_KEY}
+      # Single container used by current transcoder code for both reading raw and writing HLS
+      - AZURE_BLOB_CONTAINER=${AZURE_STORAGE_RAW_CONTAINER}
+      # Public base URL to build master playlist URL (processed container/base path)
+      - AZURE_PUBLIC_BASE=https://${AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${AZURE_STORAGE_RAW_CONTAINER}
+      - LOG_LEVEL=info
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    command: ["/app/transcoder"]
+
+  video-catalog-service:
+    build: ./VideoCatalogService
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=video_catalog
+      - DB_SSLMODE=disable
+      - AMQP_URL=amqp://guest:guest@rabbitmq:5672/
+      - AMQP_EXCHANGE=streamhive
+      - AMQP_QUEUE=video-catalog.video.transcoded
+      - AMQP_ROUTING_KEY=video.transcoded
+      - AMQP_UPLOAD_QUEUE=video-catalog.video.uploaded
+      - AMQP_UPLOAD_ROUTING_KEY=video.uploaded
+      # Azure credentials for deletion operations
+      - AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
+      - AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT}
+      - AZURE_STORAGE_KEY=${AZURE_STORAGE_KEY}
+      - AZURE_BLOB_CONTAINER=${AZURE_STORAGE_RAW_CONTAINER}
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    # Binary lives in /root per Dockerfile WORKDIR
+    command: ["/root/video-catalog-api"]
+
+  playback-service:
+    build: ./PlaybackService
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=video_catalog
+      - DB_SSLMODE=disable
+      - PORT=8090
+      # Azure auth (use connection string OR account+key OR SAS URL)
+      - AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
+      - AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT}
+      - AZURE_STORAGE_KEY=${AZURE_STORAGE_KEY}
+      - AZURE_BLOB_CONTAINER=${AZURE_STORAGE_RAW_CONTAINER}
+      # Redis caching
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - CACHE_TTL=3600
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    command: ["/playback"]
+
+  frontend:
+    build: ./Frontend
+    command: ["npm","run","dev","--","--host"]
+    working_dir: /app
+    volumes:
+      - ./Frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_UPLOAD=http://localhost:3001/api/v1
+      - VITE_API_CATALOG=http://localhost:8080/api/v1
+      - VITE_API_PLAYBACK=http://localhost:8090
+      - VITE_JWT=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyMTIzIiwidXNlcm5hbWUiOiJkZW1vIiwicGVybWlzc2lvbnMiOlsidXBsb2FkIl0sImlhdCI6MTc1NDgwNjQ1OCwiZXhwIjoxNzU0ODEwMDU4fQ.MEvZRD53drVueTOjUSwLZGgCFDyzFTq0vs87Sg-xC4M
+    ports:
+      - "5173:5173"
+    depends_on:
+      - upload-service
+      - video-catalog-service
+      - playback-service
+
+volumes:
+  pgdata:
+  redis_data:
