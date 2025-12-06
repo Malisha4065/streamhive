@@ -98,13 +98,13 @@ StreamHive is a cloud-native video streaming solution featuring HLS adaptive bit
 
 | Service | Technology | Description |
 |---------|------------|-------------|
-| [**Frontend**](./Frontend) | React, Vite, Nginx | Static SPA served via Nginx for maximum performance |
-| [**UploadService**](./UploadService) | Node.js, Express | Handles video uploads to Azure Blob Storage |
-| [**TranscoderService**](./TranscoderService) | Go, FFmpeg | Transcodes videos to HLS adaptive bitrate (1080p/720p/480p/360p) |
-| [**VideoCatalogService**](./VideoCatalogService) | Go, GORM, PostgreSQL | CRUD API for video metadata, consumes MQ events |
-| [**PlaybackService**](./PlaybackService) | Go, Redis | Generates signed HLS playback URLs with caching |
-| [**SecurityService**](./SecurityService) | Go, JWT, bcrypt | Authentication & authorization (signup/login/validate) |
-| [**Deployment-Pipelines**](./Deployment-Pipelines) | Azure DevOps YAML | CI/CD pipelines for building and deploying all services |
+| [**Frontend**](https://github.com/Malisha4065/StreamHive-Frontend) | React, Vite, Nginx | Static SPA served via Nginx for maximum performance |
+| [**UploadService**](https://github.com/Malisha4065/StreamHive-UploadService) | Node.js, Express | Handles video uploads to Azure Blob Storage |
+| [**TranscoderService**](https://github.com/Malisha4065/StreamHive-TranscoderService) | Go, FFmpeg | Transcodes videos to HLS adaptive bitrate (1080p/720p/480p/360p) |
+| [**VideoCatalogService**](https://github.com/Malisha4065/StreamHive-VideoCatalogService) | Go, GORM, PostgreSQL | CRUD API for video metadata, consumes MQ events |
+| [**PlaybackService**](https://github.com/Malisha4065/StreamHive-PlaybackService) | Go, Redis | Generates signed HLS playback URLs with caching |
+| [**SecurityService**](https://github.com/Malisha4065/StreamHive-SecurityService) | Go, JWT, bcrypt | Authentication & authorization (signup/login/validate) |
+| [**Deployment-Pipelines**](https://github.com/Malisha4065/StreamHive-Pipelines) | Azure DevOps YAML | CI/CD pipelines for building and deploying all services |
 
 ---
 
