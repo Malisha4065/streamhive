@@ -7,8 +7,8 @@
   <img src="https://img.shields.io/badge/FFmpeg-007808?style=for-the-badge&logo=ffmpeg&logoColor=white" alt="FFmpeg"/>
 </p>
 
-# 🐝 StreamHive
-[![Demo Video](https://img.shields.io/badge/▶️_Watch_Demo-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/j5ETe2vYVw8?si=bzaoTOCsboHxPKr9)
+# 🐝 StreamHive [![Demo Video](https://img.shields.io/badge/▶️_Watch_Demo-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/j5ETe2vYVw8?si=bzaoTOCsboHxPKr9)
+
 
 **A production-grade video streaming platform built with microservices architecture**
 
