@@ -8,12 +8,11 @@
 </p>
 
 # 🐝 StreamHive
+[![Demo Video](https://img.shields.io/badge/▶️_Watch_Demo-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/j5ETe2vYVw8?si=bzaoTOCsboHxPKr9)
 
 **A production-grade video streaming platform built with microservices architecture**
 
 StreamHive is a cloud-native video streaming solution featuring HLS adaptive bitrate streaming, deployed on a manually configured Kubernetes cluster in Azure. The platform handles the complete video lifecycle—from upload and transcoding to catalog management and playback.
-
-[![Demo Video](https://img.shields.io/badge/▶️_Watch_Demo-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/j5ETe2vYVw8?si=bzaoTOCsboHxPKr9)
 
 ---
 
